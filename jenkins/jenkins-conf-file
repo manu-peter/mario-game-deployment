@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "sevenajay/supermario-game:latest"
+        EKS_CLUSTER = "project-3-eks-cluster"
+        KUBECONFIG = "/home/jenkins/.kube/config"
+    }
+
+    stages {
+        stage('Pull Docker Image') {
+            steps {
+                echo "Pulling mario Docker Image..."
+                sh "sudo docker pull mario:latest"
+            }
+        }
+
+        stage('Test Docker Image') {
+            steps {
+                echo "Running Container Tests..."
+                sh "sudo docker run --rm $mario pytest"
+            }
+        }
+
+        stage('Terraform Infrastructure Setup') {
+            steps {
+                dir('terraform') {
+                    sh """
+                        sudo terraform init
+                        sudo terraform plan -out tfplan
+                        sudo terraform apply -auto-approve tfplan
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                    sh """
+                        sudo aws eks update-kubeconfig --name EKS_CLOUD --region ap-south-1
+                        sudo kubectl set image deployment/supermario-game supermario-game=sevenajay/mario:latest
+                        sudo kubectl apply -f /home/manu/Dev-Ops-learning/project3/k8s/mario-deployment.yml           #Change The Path
+                        sudo kubectl apply -f /home/manu/Dev-Ops-learning/project3/k8s/mario-service.yml              #Change The Path
+                    """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment Successful!"
+        }
+        failure {
+            echo "Deployment Failed!"
+        }
+    }
+}
+
+
