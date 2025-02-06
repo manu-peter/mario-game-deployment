@@ -1,0 +1,22 @@
+services:
+    node-exporter:
+        pid: host
+        network_mode: host
+        volumes:
+            - '/:/host:rw,rslave'
+        image: 'quay.io/prometheus/node-exporter:latest'
+
+    prometheus:
+        container_name: prometheus1
+        ports:
+            - '9090:9090' 
+        volumes:
+            - '/home/ubuntu/mario-game-deployment/prometheus:/etc/prometheus/' 
+        image: prom/prometheus
+
+    grafana:
+        container_name: grafana1
+        ports:
+            - '3000:3000' 
+        image: grafana/grafana
+
